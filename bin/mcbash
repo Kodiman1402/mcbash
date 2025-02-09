@@ -1225,3 +1225,37 @@ done
 # dougy147 [2022]
 # https://github.com/dougy147/mcbash
 # last updated : 27sep2023
+
+get_paid_devices() {
+    # API-URL für das Benutzerprofil
+    profile_url="${dns}/portal.php?type=stb&action=get_profile&JsHttpRequest=1-xml"
+
+    # API-Request mit curl
+    profile_data=$(curl -s -X GET -H "Accept: */*" -H "User-Agent: ${user_agent}" -H "Authorization: ${authorization}" -H "Cookie: ${cookie}" "${profile_url}")
+
+    # Anzahl der bezahlten Geräte extrahieren (angenommen, JSON-Feld heißt 'paid_devices')
+    paid_devices=$(echo "${profile_data}" | grep -o '"paid_devices":[0-9]*' | grep -o '[0-9]*')
+
+    # Falls keine Zahl gefunden wurde, Standardwert setzen
+    if [ -z "${paid_devices}" ]; then
+        paid_devices="Unknown"
+    fi
+
+    # Ergebnis speichern
+    echo "Bezahlte Geräte: ${paid_devices}" > ~/.config/mcbash/paid_devices.log
+    echo "Anzahl bezahlter Geräte: ${paid_devices}"
+}
+
+# Funktion nach der Installation aufrufen
+post_install() {
+    if mkdir -p /home/${SUDO_USER}/.config/mcbash; then
+        if ! [ -f /home/${SUDO_USER}/.config/mcbash/mcbash.conf ] ; then
+            cp -f /etc/mcbash.conf /home/${SUDO_USER}/.config/mcbash/mcbash.conf
+            chmod 777 /home/${SUDO_USER}/.config/mcbash/mcbash.conf
+        fi
+    fi
+    chown -R ${SUDO_USER}:${SUDO_USER} /home/${SUDO_USER}/.config/mcbash
+
+    # Abruf der bezahlten Geräte nach der Installation
+    get_paid_devices
+}
